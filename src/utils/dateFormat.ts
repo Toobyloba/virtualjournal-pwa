@@ -17,6 +17,16 @@ export function formatDate(iso: string): string {
   return d.toLocaleDateString(undefined, opts);
 }
 
+export function formatDateFull(iso: string): string {
+  const d = new Date(iso);
+  const now = new Date();
+  const opts: Intl.DateTimeFormatOptions =
+    d.getFullYear() === now.getFullYear()
+      ? { month: 'short', day: 'numeric' }
+      : { year: 'numeric', month: 'short', day: 'numeric' };
+  return d.toLocaleDateString(undefined, opts);
+}
+
 export function formatDateLong(iso: string): string {
   return new Date(iso).toLocaleString(undefined, {
     year: 'numeric', month: 'long', day: 'numeric',

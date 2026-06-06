@@ -4,7 +4,7 @@ import { readVault, deleteEntry } from '../storage';
 import { decrypt }                from '../crypto';
 import { getPassword, lock }      from '../auth';
 import { navigate }               from '../router';
-import { formatDate }             from '../utils/dateFormat';
+import { formatDate, formatDateFull } from '../utils/dateFormat';
 import { showToast }              from '../utils/dateFormat';
 
 const isDesktop = () => window.innerWidth >= 768;
@@ -95,16 +95,19 @@ async function loadEntries(container: HTMLElement, activeId: string | null): Pro
       entries.map(async e => {
         try {
           const text = await decrypt(e.previewPayload, password);
-          return { id: e.id, date: e.createdAt, text };
+          return { id: e.id, createdAt: e.createdAt, updatedAt: e.updatedAt, text };
         } catch {
-          return { id: e.id, date: e.createdAt, text: '[Decryption failed]' };
+          return { id: e.id, createdAt: e.createdAt, updatedAt: e.updatedAt, text: '[Decryption failed]' };
         }
       })
     );
 
     list.innerHTML = previews.map(p => `
       <div class="card${p.id === activeId ? ' active' : ''}" data-id="${p.id}">
-        <div class="card-date">${formatDate(p.date)}</div>
+        <div class="card-date">
+          <span class="card-date-relative">${formatDate(p.createdAt)}</span>
+          <span class="card-date-full">${formatDateFull(p.createdAt)}</span>
+        </div>
         <div class="card-preview">${escHtml(p.text)}</div>
       </div>
     `).join('');
