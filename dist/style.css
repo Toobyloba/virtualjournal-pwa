@@ -440,3 +440,142 @@ html, body {
   white-space: nowrap;
 }
 .toast.show { opacity: 1; }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   DESKTOP TWO-PANEL LAYOUT  (≥ 768px)
+   ══════════════════════════════════════════════════════════════════════════════ */
+@media (min-width: 768px) {
+
+  #app {
+    flex-direction: row;
+    height: 100vh;
+    max-width: 1280px;
+    margin: 0 auto;
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+  }
+
+  #sidebar {
+    width: 300px;
+    min-width: 300px;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--border);
+    background: var(--surface);
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+
+  #sidebar .topbar {
+    background: var(--surface);
+    padding-top: 20px;
+  }
+
+  #sidebar .scroll-area {
+    padding-bottom: 16px;
+  }
+
+  #main-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--bg);
+  }
+
+  #sidebar .fab {
+    position: static;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    font-size: 22px;
+    box-shadow: none;
+    padding: 0;
+  }
+
+  #main-panel > .screen {
+    height: 100%;
+  }
+
+  .auth-card-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    width: 100%;
+    background: var(--bg);
+  }
+
+  .auth-card-wrap .center-screen {
+    max-width: 440px;
+    width: 100%;
+    background: var(--surface);
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    padding: 40px 36px;
+    min-height: unset;
+    box-shadow: 0 8px 48px rgba(0,0,0,0.5);
+  }
+
+  .card.active {
+    border-color: var(--accent);
+    background: #1e1a2e;
+  }
+
+  .modal {
+    max-width: 480px;
+  }
+
+  .toast {
+    bottom: 32px;
+  }
+
+  #sidebar .topbar-title {
+    font-size: 18px;
+  }
+
+  .editor-textarea {
+    padding: 32px 40px;
+    font-size: 18px;
+    line-height: 30px;
+    max-width: 720px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .entry-body {
+    padding: 32px 40px;
+    font-size: 18px;
+    line-height: 30px;
+    max-width: 720px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  #main-panel .scroll-area {
+    max-width: 640px;
+    margin: 0 auto;
+    width: 100%;
+    padding-bottom: 40px;
+  }
+}
+
+@media (min-width: 1100px) {
+  #sidebar { width: 340px; min-width: 340px; }
+}
+
+/* ── Welcome Pane ─────────────────────────────────────────────────────────── */
+.welcome-pane {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 14px;
+  text-align: center;
+  padding: 40px;
+  color: var(--text-muted);
+}
+.welcome-icon  { font-size: 56px; }
+.welcome-title { font-size: 20px; font-weight: 700; color: var(--text-primary); }
+.welcome-desc  { font-size: 15px; color: var(--text-muted); max-width: 280px; }
