@@ -4,6 +4,7 @@ import { readVault, addEntry, updateEntry } from '../storage';
 import { encrypt, decrypt }                 from '../crypto';
 import { getPassword, resetAutoLockTimer }  from '../auth';
 import { navigate }                         from '../router';
+import { uploadAfterSave }                  from '../drive';
 
 export async function renderEditor(container: HTMLElement, entryId?: string): Promise<void> {
   container.innerHTML = `
@@ -29,9 +30,9 @@ export async function renderEditor(container: HTMLElement, entryId?: string): Pr
   const password   = getPassword();
   if (!password) { navigate('#lock'); return; }
 
-  let dirty      = false;
+  let dirty     = false;
   let saveTimer: ReturnType<typeof setTimeout> | null = null;
-  let currentId  = entryId ?? null;
+  let currentId = entryId ?? null;
 
   if (entryId) {
     statusEl.textContent = 'Loading…';
@@ -67,6 +68,7 @@ export async function renderEditor(container: HTMLElement, entryId?: string): Pr
     if (!body.trim()) return;
     const pwd = getPassword();
     if (!pwd) return;
+
     setStatus('saving');
     try {
       const [payload, previewPayload] = await Promise.all([
@@ -74,14 +76,22 @@ export async function renderEditor(container: HTMLElement, entryId?: string): Pr
         encrypt(body.slice(0, 120), pwd),
       ]);
       const now = new Date().toISOString();
+      let vault;
+
       if (!currentId) {
         currentId = crypto.randomUUID();
         await addEntry({ id: currentId, createdAt: now, updatedAt: now, payload, previewPayload });
       } else {
-        const vault = await readVault();
+        vault = await readVault();
         const existing = vault?.entries.find(e => e.id === currentId);
         await updateEntry({ id: currentId, createdAt: existing?.createdAt ?? now, updatedAt: now, payload, previewPayload });
       }
+
+      // Fire-and-forget Drive backup — never blocks local save
+      readVault().then(v => {
+        if (v) uploadAfterSave(JSON.stringify(v)).catch(() => {});
+      });
+
       setStatus('saved');
     } catch { setStatus('unsaved'); }
   };

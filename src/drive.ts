@@ -1,13 +1,12 @@
-// ── drive.ts ──────────────────────────────────────────────────────────────────
+// ── drive.ts ───────────────────────────────────────────────────────────────────────
 // Google Drive integration — stores vault.ejson as an encrypted blob in Drive.
 // Uses OAuth2 implicit flow + drive.appdata scope (hidden app folder, no
 // permission to see any user file).
 
 import { get, set, del } from 'idb-keyval';
 
-// ── Constants ─────────────────────────────────────────────────────────────────
+// ── Constants ───────────────────────────────────────────────────────────────────
 
-// Replace with your Google Cloud Console OAuth2 client ID
 const CLIENT_ID   = (window as any).__GOOGLE_CLIENT_ID__ ?? 'YOUR_CLIENT_ID_HERE';
 const SCOPE       = 'https://www.googleapis.com/auth/drive.appdata';
 const REDIRECT    = window.location.origin + window.location.pathname;
@@ -19,11 +18,11 @@ const IDB_EXPIRY   = 'gd_token_expiry';
 const IDB_FILE_ID  = 'gd_file_id';
 const IDB_ENABLED  = 'gd_enabled';
 
-// ── Token Management ──────────────────────────────────────────────────────────
+// ── Token Management ─────────────────────────────────────────────────────────────
 
 interface TokenState {
   accessToken: string | null;
-  expiry:      number;          // epoch ms
+  expiry:      number;
 }
 
 const tokenState: TokenState = { accessToken: null, expiry: 0 };
@@ -67,7 +66,7 @@ export async function revokeToken(): Promise<void> {
   }
 }
 
-// ── OAuth2 Implicit Flow ──────────────────────────────────────────────────────
+// ── OAuth2 Implicit Flow ──────────────────────────────────────────────────────────
 
 const STATE_KEY = 'gd_oauth_state';
 
@@ -87,7 +86,6 @@ export function startOAuthFlow(): void {
   window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
 }
 
-// Call this on app init to handle the redirect-back token in the URL hash
 export async function handleOAuthCallback(): Promise<boolean> {
   const hash = new URLSearchParams(window.location.hash.replace('#', ''));
   const token     = hash.get('access_token');
@@ -105,17 +103,13 @@ export async function handleOAuthCallback(): Promise<boolean> {
 
   await persistToken(token, parseInt(expiresIn, 10));
   await set(IDB_ENABLED, true);
-
-  // Clean token from URL (don't expose it in browser history)
   history.replaceState(null, '', window.location.pathname);
-
   return true;
 }
 
-// Silent re-auth via hidden iframe (works if user is still logged in to Google)
 export function silentRefresh(): Promise<boolean> {
   return new Promise(resolve => {
-    const state  = crypto.randomUUID();
+    const state = crypto.randomUUID();
     sessionStorage.setItem(STATE_KEY, state);
 
     const params = new URLSearchParams({
@@ -131,10 +125,7 @@ export function silentRefresh(): Promise<boolean> {
     iframe.style.display = 'none';
     iframe.src = `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
 
-    const timer = setTimeout(() => {
-      iframe.remove();
-      resolve(false);
-    }, 10_000);
+    const timer = setTimeout(() => { iframe.remove(); resolve(false); }, 10_000);
 
     iframe.addEventListener('load', async () => {
       clearTimeout(timer);
@@ -142,19 +133,17 @@ export function silentRefresh(): Promise<boolean> {
         const iHash = new URLSearchParams(
           (iframe.contentWindow?.location.hash ?? '').replace('#', '')
         );
-        const token     = iHash.get('access_token');
-        const expiresIn = iHash.get('expires_in');
-        const iState    = iHash.get('state');
-        if (token && expiresIn && iState === sessionStorage.getItem(STATE_KEY)) {
+        const t  = iHash.get('access_token');
+        const ex = iHash.get('expires_in');
+        const is = iHash.get('state');
+        if (t && ex && is === sessionStorage.getItem(STATE_KEY)) {
           sessionStorage.removeItem(STATE_KEY);
-          await persistToken(token, parseInt(expiresIn, 10));
+          await persistToken(t, parseInt(ex, 10));
           iframe.remove();
           resolve(true);
           return;
         }
-      } catch {
-        // cross-origin block = user needs re-auth
-      }
+      } catch { /* cross-origin = needs re-auth */ }
       iframe.remove();
       resolve(false);
     });
@@ -163,25 +152,18 @@ export function silentRefresh(): Promise<boolean> {
   });
 }
 
-// ── Drive API Helpers ─────────────────────────────────────────────────────────
+// ── Drive API Helpers ────────────────────────────────────────────────────────────────
 
-async function driveRequest(
-  url: string,
-  options: RequestInit = {}
-): Promise<Response> {
+async function driveRequest(url: string, options: RequestInit = {}): Promise<Response> {
   const token = getToken();
   if (!token) throw new Error('Not authenticated with Google Drive');
 
   const res = await fetch(url, {
     ...options,
-    headers: {
-      ...(options.headers ?? {}),
-      Authorization: `Bearer ${token}`,
-    },
+    headers: { ...(options.headers ?? {}), Authorization: `Bearer ${token}` },
   });
 
   if (res.status === 401) {
-    // Token expired mid-session
     await del(IDB_TOKEN);
     tokenState.accessToken = null;
     throw new Error('DRIVE_AUTH_EXPIRED');
@@ -199,7 +181,6 @@ async function getFileId(): Promise<string | null> {
   const cached = await get<string>(IDB_FILE_ID);
   if (cached) return cached;
 
-  // Search in appDataFolder
   const params = new URLSearchParams({
     spaces: FOLDER,
     q:      `name = '${FILE_NAME}'`,
@@ -216,7 +197,7 @@ async function getFileId(): Promise<string | null> {
   return null;
 }
 
-// ── Public API ────────────────────────────────────────────────────────────────
+// ── Public API ────────────────────────────────────────────────────────────────────
 
 export async function isDriveEnabled(): Promise<boolean> {
   return (await get<boolean>(IDB_ENABLED)) === true;
@@ -228,7 +209,6 @@ export async function uploadVault(vaultJson: string): Promise<void> {
   let fileId  = await getFileId();
 
   if (!fileId) {
-    // Create new file in appDataFolder
     const meta = JSON.stringify({ name: FILE_NAME, parents: [FOLDER] });
     const form  = new FormData();
     form.append('metadata', new Blob([meta], { type: 'application/json' }));
@@ -242,7 +222,6 @@ export async function uploadVault(vaultJson: string): Promise<void> {
     fileId     = json.id;
     await set(IDB_FILE_ID, fileId);
   } else {
-    // Update existing file
     await driveRequest(
       `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`,
       { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body }
@@ -259,4 +238,25 @@ export async function downloadVault(): Promise<string> {
     `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`
   );
   return res.text();
+}
+
+/**
+ * Call this after every successful local save.
+ * Silently uploads to Drive if connected; attempts silent token refresh on
+ * expiry; gives up quietly (local vault is always the source of truth).
+ */
+export async function uploadAfterSave(vaultJson: string): Promise<void> {
+  if (!(await isDriveEnabled())) return;
+
+  if (!isTokenValid()) {
+    const refreshed = await silentRefresh();
+    if (!refreshed) return;   // token expired, user will reconnect next time
+  }
+
+  try {
+    await uploadVault(vaultJson);
+  } catch (err) {
+    // Never throw — a failed backup should never block a local save
+    console.warn('[Drive] upload failed silently:', err);
+  }
 }
