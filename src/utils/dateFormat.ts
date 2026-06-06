@@ -61,5 +61,8 @@ export function checkStrength(pwd: string): StrengthResult {
   score = Math.min(4, score);
   const labels = ['Too short', 'Weak', 'Fair', 'Good', 'Strong'];
   const colors = ['#ef4444', '#ef4444', '#f59e0b', '#3b82f6', '#22c55e'];
-  return { score, label: labels[score], color: colors[score] };
+  return { score, label: labels[score]!, color: colors[score]! };
 }
+
+// Alias used by setup.ts
+export const passwordStrength = checkStrength;
