@@ -1,4 +1,4 @@
-// ── storage.ts ────────────────────────────────────────────────────────────────
+// ── storage.ts ────────────────────────────────────────────────────────────────────────────────
 // Vault OPFS file + IndexedDB settings/verification via idb-keyval.
 
 import { get, set } from 'idb-keyval';
@@ -27,7 +27,7 @@ export interface VaultSettings {
 const IDB_VERIFY   = 'vaultjournal_verify';
 const IDB_SETTINGS = 'vaultjournal_settings';
 
-// ── OPFS helpers ──────────────────────────────────────────────────────────────
+// ── OPFS helpers ────────────────────────────────────────────────────────────────────────────────
 
 async function getFileHandle(): Promise<FileSystemFileHandle> {
   const root = await navigator.storage.getDirectory();
@@ -77,11 +77,16 @@ export async function initVault(): Promise<void> {
   await writeVault(vault);
 }
 
-// ── Entry CRUD ────────────────────────────────────────────────────────────────
+// ── Entry CRUD ────────────────────────────────────────────────────────────────────────────────
 
 export async function addEntry(entry: JournalEntry): Promise<void> {
-  const vault = await readVault();
-  if (!vault) throw new Error('No vault');
+  let vault = await readVault();
+  // Auto-init vault if it doesn't exist yet (e.g. first entry after setup)
+  if (!vault) {
+    await initVault();
+    vault = await readVault();
+  }
+  if (!vault) throw new Error('Failed to initialise vault');
   vault.entries.unshift(entry);
   await writeVault(vault);
 }
@@ -108,7 +113,7 @@ export async function replaceAllEntries(entries: JournalEntry[]): Promise<void> 
   await writeVault(vault);
 }
 
-// ── IndexedDB: settings ───────────────────────────────────────────────────────
+// ── IndexedDB: settings ───────────────────────────────────────────────────────────────────────
 
 export async function loadSettings(): Promise<VaultSettings> {
   const s = await get<VaultSettings>(IDB_SETTINGS);
@@ -120,7 +125,7 @@ export async function saveSettings(partial: Partial<VaultSettings>): Promise<voi
   await set(IDB_SETTINGS, { ...current, ...partial });
 }
 
-// ── IndexedDB: verification token ─────────────────────────────────────────────
+// ── IndexedDB: verification token ─────────────────────────────────────────────────────
 
 export async function saveVerificationToken(payload: EncryptedPayload): Promise<void> {
   await set(IDB_VERIFY, payload);
@@ -130,7 +135,7 @@ export async function loadVerificationToken(): Promise<EncryptedPayload | null> 
   return (await get<EncryptedPayload>(IDB_VERIFY)) ?? null;
 }
 
-// ── Import validation ─────────────────────────────────────────────────────────
+// ── Import validation ─────────────────────────────────────────────────────────────────────────────
 
 export function validateVaultFile(obj: unknown): obj is VaultFile {
   if (typeof obj !== 'object' || obj === null) return false;
