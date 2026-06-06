@@ -1,4 +1,4 @@
-// ── screens/editor.ts ─────────────────────────────────────────────────────────
+// ── screens/editor.ts ───────────────────────────────────────────────────────────────────────
 
 import { readVault, addEntry, updateEntry } from '../storage';
 import { encrypt, decrypt }                 from '../crypto';
@@ -14,20 +14,25 @@ export async function renderEditor(container: HTMLElement, entryId?: string): Pr
         <span class="save-status unsaved" id="save-status"></span>
       </div>
       <textarea class="editor-textarea" id="editor" placeholder="Start writing…" spellcheck="true"></textarea>
+      <div class="editor-meta">
+        <span id="word-count">0 words</span>
+        <span id="char-count" style="margin-left:auto">0 chars</span>
+      </div>
     </div>
   `;
 
   const textarea   = container.querySelector<HTMLTextAreaElement>('#editor')!;
   const statusEl   = container.querySelector<HTMLElement>('#save-status')!;
   const backBtn    = container.querySelector<HTMLButtonElement>('#back-btn')!;
+  const wordCount  = container.querySelector<HTMLElement>('#word-count')!;
+  const charCount  = container.querySelector<HTMLElement>('#char-count')!;
   const password   = getPassword();
   if (!password) { navigate('#lock'); return; }
 
-  let dirty       = false;
-  let saveTimer:  ReturnType<typeof setTimeout> | null = null;
-  let currentId   = entryId ?? null;
+  let dirty      = false;
+  let saveTimer: ReturnType<typeof setTimeout> | null = null;
+  let currentId  = entryId ?? null;
 
-  // Load existing entry
   if (entryId) {
     statusEl.textContent = 'Loading…';
     try {
@@ -35,18 +40,26 @@ export async function renderEditor(container: HTMLElement, entryId?: string): Pr
       const entry = vault?.entries.find(e => e.id === entryId);
       if (entry) {
         textarea.value = await decrypt(entry.payload, password);
+        updateCounts(textarea.value);
       }
-    } catch {
-      statusEl.textContent = 'Load error';
-    }
+    } catch { statusEl.textContent = 'Load error'; }
     statusEl.textContent = '';
   }
 
   textarea.focus();
 
+  function updateCounts(text: string): void {
+    const words = text.trim() === '' ? 0 : text.trim().split(/\s+/).length;
+    wordCount.textContent = `${words} word${words !== 1 ? 's' : ''}`;
+    charCount.textContent = `${text.length} char${text.length !== 1 ? 's' : ''}`;
+  }
+
   const setStatus = (s: 'saving' | 'saved' | 'unsaved' | '') => {
     statusEl.className = `save-status ${s}`;
-    statusEl.textContent = s === 'saving' ? '⏳ Saving…' : s === 'saved' ? '✓ Saved' : s === 'unsaved' ? '● Unsaved' : '';
+    statusEl.textContent =
+      s === 'saving'  ? '⏳ Saving…' :
+      s === 'saved'   ? '✓ Saved'    :
+      s === 'unsaved' ? '● Unsaved'  : '';
   };
 
   const save = async () => {
@@ -54,14 +67,12 @@ export async function renderEditor(container: HTMLElement, entryId?: string): Pr
     if (!body.trim()) return;
     const pwd = getPassword();
     if (!pwd) return;
-
     setStatus('saving');
     try {
       const [payload, previewPayload] = await Promise.all([
         encrypt(body, pwd),
         encrypt(body.slice(0, 120), pwd),
       ]);
-
       const now = new Date().toISOString();
       if (!currentId) {
         currentId = crypto.randomUUID();
@@ -69,29 +80,19 @@ export async function renderEditor(container: HTMLElement, entryId?: string): Pr
       } else {
         const vault = await readVault();
         const existing = vault?.entries.find(e => e.id === currentId);
-        await updateEntry({
-          id: currentId,
-          createdAt: existing?.createdAt ?? now,
-          updatedAt: now,
-          payload,
-          previewPayload,
-        });
+        await updateEntry({ id: currentId, createdAt: existing?.createdAt ?? now, updatedAt: now, payload, previewPayload });
       }
       setStatus('saved');
-    } catch {
-      setStatus('unsaved');
-    }
+    } catch { setStatus('unsaved'); }
   };
 
   textarea.addEventListener('input', () => {
     dirty = true;
+    updateCounts(textarea.value);
     setStatus('unsaved');
     resetAutoLockTimer();
     if (saveTimer) clearTimeout(saveTimer);
-    saveTimer = setTimeout(async () => {
-      await save();
-      dirty = false;
-    }, 1500);
+    saveTimer = setTimeout(async () => { await save(); dirty = false; }, 1500);
   });
 
   const goBack = async () => {
@@ -101,7 +102,5 @@ export async function renderEditor(container: HTMLElement, entryId?: string): Pr
   };
 
   backBtn.addEventListener('click', goBack);
-
-  // Handle Android back gesture via popstate
   window.addEventListener('popstate', goBack, { once: true });
 }
