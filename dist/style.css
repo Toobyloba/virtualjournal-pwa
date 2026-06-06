@@ -305,6 +305,29 @@ body::before {
 .fab:hover  { transform: scale(1.08); box-shadow: 0 8px 32px rgba(124,58,237,0.55); }
 .fab:active { transform: scale(0.94); }
 
+/* ── Auth / Setup centred layout ─────────────────────────────────────────────── */
+
+/* The outer screen scrolls; the inner card stays centred on large screens */
+.setup-screen-scroll {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: calc(32px + env(safe-area-inset-top)) 20px
+           calc(40px + env(safe-area-inset-bottom));
+}
+
+.setup-card {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
 .center-screen {
   display: flex;
   flex-direction: column;
@@ -343,6 +366,8 @@ body::before {
   font-size: 14px;
   color: var(--text-muted);
   text-align: center;
+  line-height: 1.6;
+  width: 100%;
 }
 
 .form-group {
@@ -407,6 +432,7 @@ body::before {
   color: var(--danger);
   font-size: 13px;
   text-align: center;
+  padding: 4px 0;
 }
 
 .empty-state {
@@ -571,7 +597,11 @@ body::before {
   transform: translateX(-50%) translateY(0);
 }
 
-/* ── Setup screen: tabs ─────────────────────────────────────────────────────── */
+/* ────────────────────────────────────────────────────────────────────────────
+   SETUP SCREEN — 3-tab card
+   ──────────────────────────────────────────────────────────────────────────── */
+
+/* Tab bar — pill switcher */
 .setup-tabs {
   display: flex;
   width: 100%;
@@ -579,12 +609,12 @@ body::before {
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
   padding: 4px;
-  gap: 4px;
+  gap: 3px;
 }
 .setup-tab {
   flex: 1;
-  padding: 9px 12px;
-  font-size: 14px;
+  padding: 9px 8px;
+  font-size: 13px;
   font-weight: 600;
   border: none;
   border-radius: 10px;
@@ -592,17 +622,31 @@ body::before {
   color: var(--text-muted);
   cursor: pointer;
   font-family: inherit;
+  white-space: nowrap;
   transition: background var(--transition), color var(--transition);
   touch-action: manipulation;
+  letter-spacing: -0.01em;
 }
-.setup-tab:hover  { color: var(--text-primary); }
+.setup-tab:hover { color: var(--text-primary); }
 .setup-tab.active {
   background: var(--accent-gradient);
   color: #fff;
   box-shadow: 0 2px 10px var(--accent-glow);
 }
 
-/* ── Setup screen: restore source buttons ──────────────────────────────── */
+/* Tab panels — THE critical rule: hidden by default, visible when .active */
+.setup-panel {
+  display: none;            /* ← hides all panels */
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  animation: fadeSlideIn 0.15s ease forwards;
+}
+.setup-panel.active {
+  display: flex;            /* ← shows only the active one */
+}
+
+/* Restore: source toggle */
 .restore-source-row {
   display: flex;
   width: 100%;
@@ -626,24 +670,24 @@ body::before {
   transition: background var(--transition), color var(--transition);
   touch-action: manipulation;
 }
-.restore-source-btn:hover  { color: var(--text-primary); }
+.restore-source-btn:hover { color: var(--text-primary); }
 .restore-source-btn.active {
   background: var(--surface-2);
   color: var(--text-primary);
   border: 1px solid var(--border-hover);
 }
 
-/* ── Setup screen: drop zone ──────────────────────────────────────────────── */
+/* Drop-zone */
 .drop-zone {
   width: 100%;
   border: 2px dashed var(--border);
   border-radius: var(--radius-md);
-  padding: 24px 16px;
+  padding: 28px 16px;
   text-align: center;
   color: var(--text-muted);
   font-size: 14px;
   cursor: pointer;
-  transition: border-color var(--transition), background var(--transition);
+  transition: border-color var(--transition), background var(--transition), color var(--transition);
   line-height: 1.5;
 }
 .drop-zone:hover, .drop-zone.drag-over {
@@ -651,7 +695,7 @@ body::before {
   background: rgba(124, 58, 237, 0.06);
   color: var(--accent-light);
 }
-.drop-zone u { color: var(--accent-light); }
+.drop-zone u { color: var(--accent-light); text-decoration: underline; }
 
 .file-chosen-row {
   display: flex;
@@ -668,7 +712,7 @@ body::before {
 }
 .file-chosen-row span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* ── Drive status widget ─────────────────────────────────────────────────────── */
+/* Drive status */
 .drive-status-connected {
   display: flex;
   flex-direction: column;
@@ -709,11 +753,7 @@ body::before {
     flex-shrink: 0;
   }
 
-  #sidebar .topbar {
-    background: transparent;
-    padding-top: 20px;
-  }
-
+  #sidebar .topbar { background: transparent; padding-top: 20px; }
   #sidebar .scroll-area { padding-bottom: 16px; }
 
   #main-panel {
@@ -726,8 +766,7 @@ body::before {
 
   #sidebar .fab {
     position: static;
-    width: 34px;
-    height: 34px;
+    width: 34px; height: 34px;
     border-radius: 9px;
     font-size: 20px;
     box-shadow: none;
@@ -737,24 +776,16 @@ body::before {
 
   #main-panel > .screen { height: 100%; }
 
-  .auth-card-wrap {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    width: 100%;
-    background: var(--bg);
+  /* Setup card on desktop: centred floating card */
+  .setup-screen-scroll {
+    align-items: center;    /* vertically centred on desktop */
   }
-
-  .auth-card-wrap .center-screen {
-    max-width: 440px;
-    width: 100%;
+  .setup-card {
     background: var(--surface);
     border-radius: 24px;
     border: 1px solid var(--border);
-    padding: 44px 40px;
-    min-height: unset;
-    box-shadow: 0 8px 64px rgba(0,0,0,0.6), 0 0 0 1px rgba(124,58,237,0.1);
+    padding: 40px 36px;
+    box-shadow: 0 8px 64px rgba(0,0,0,0.55), 0 0 0 1px rgba(124,58,237,0.08);
   }
 
   .modal    { max-width: 480px; }
