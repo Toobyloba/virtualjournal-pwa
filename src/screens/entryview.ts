@@ -17,7 +17,7 @@ export async function renderEntryView(container: HTMLElement, entryId: string): 
         <button class="icon-btn danger" id="delete-btn" title="Delete">🗑️</button>
       </div>
       <div style="padding: 8px 20px; border-bottom: 1px solid var(--border); flex-shrink:0">
-        <div id="entry-date" style="font-size:13px; color: var(--text-faint)"></div>
+        <div id="entry-date" style="font-size:13px; color: var(--text-faint); display:flex; gap:12px; flex-wrap:wrap"></div>
       </div>
       <div class="entry-body" id="entry-body">
         <div class="skeleton skeleton-line long" style="margin: 20px"></div>
@@ -44,11 +44,16 @@ export async function renderEntryView(container: HTMLElement, entryId: string): 
     const entry = vault?.entries.find(e => e.id === entryId);
     if (!entry) { navigate('#home'); return; }
 
-    const text    = await decrypt(entry.payload, password);
-    const dateEl  = container.querySelector<HTMLElement>('#entry-date')!;
-    const bodyEl  = container.querySelector<HTMLElement>('#entry-body')!;
+    const text   = await decrypt(entry.payload, password);
+    const dateEl = container.querySelector<HTMLElement>('#entry-date')!;
+    const bodyEl = container.querySelector<HTMLElement>('#entry-body')!;
 
-    dateEl.textContent = formatDateLong(entry.updatedAt);
+    const sameDay = entry.createdAt.slice(0, 10) === entry.updatedAt.slice(0, 10);
+
+    dateEl.innerHTML = sameDay
+      ? `<span>Created ${formatDateLong(entry.createdAt)}</span>`
+      : `<span>Created ${formatDateLong(entry.createdAt)}</span><span>Edited ${formatDateLong(entry.updatedAt)}</span>`;
+
     bodyEl.textContent = text;
   } catch (e) {
     const bodyEl = container.querySelector<HTMLElement>('#entry-body')!;
