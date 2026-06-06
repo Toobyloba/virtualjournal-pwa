@@ -1,0 +1,17 @@
+{
+  "name": "vaultjournal",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "npx esbuild src/main.ts --bundle --outfile=dist/app.js --target=chrome112 --minify",
+    "dev": "npx esbuild src/main.ts --bundle --outfile=dist/app.js --target=chrome112 --watch & npx serve dist",
+    "serve": "npx serve dist"
+  },
+  "devDependencies": {
+    "esbuild": "^0.21.0",
+    "typescript": "^5.4.0"
+  },
+  "dependencies": {
+    "idb-keyval": "^6.2.1"
+  }
+}
