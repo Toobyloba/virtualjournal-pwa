@@ -1,7 +1,7 @@
 // ── screens/setup.ts ──────────────────────────────────────────────────────────
 //
 // Three-tab auth/onboarding screen:
-//   Login     — unlock existing vault (shown & pre-selected when vault exists)
+//   Unlock    — enter password to open existing vault
 //   Restore   — import backup from local file or Google Drive
 //   New Vault — create a fresh encrypted vault
 
@@ -33,10 +33,8 @@ export async function renderSetup(
   await loadTokenFromIdb();
   const wasOAuth = await handleOAuthCallback();
   const hasVault = await vaultExists();
+  // Pre-select: Unlock if vault exists, New Vault if not. Override with initialTab.
   const startTab: SetupTab = initialTab ?? (hasVault ? 'login' : 'new');
-
-  // Login tab only visible when vault exists
-  const loginDisplay = hasVault ? '' : 'display:none';
 
   container.innerHTML = `
     <div class="screen">
@@ -46,19 +44,15 @@ export async function renderSetup(
           <div class="lock-icon" style="text-align:center">✦</div>
           <div class="screen-title">Glyph</div>
 
+          <!-- 3 tabs — always all visible -->
           <div class="setup-tabs">
-            <button class="setup-tab${startTab==='login'  ? ' active':''}"
-              data-tab="login" style="${loginDisplay}">
-              Unlock
-            </button>
-            <button class="setup-tab${startTab==='restore'? ' active':''}"
-              data-tab="restore">Restore</button>
-            <button class="setup-tab${startTab==='new'    ? ' active':''}"
-              data-tab="new">New Vault</button>
+            <button class="setup-tab${startTab === 'login'   ? ' active' : ''}" data-tab="login">Unlock</button>
+            <button class="setup-tab${startTab === 'restore' ? ' active' : ''}" data-tab="restore">Restore</button>
+            <button class="setup-tab${startTab === 'new'     ? ' active' : ''}" data-tab="new">New Vault</button>
           </div>
 
-          <!-- LOGIN -->
-          <div id="panel-login" class="setup-panel${startTab==='login' ? ' active':''}">
+          <!-- UNLOCK -->
+          <div id="panel-login" class="setup-panel${startTab === 'login' ? ' active' : ''}">
             <p class="screen-subtitle">Welcome back — enter your master password.</p>
             <div class="form-group">
               <label class="label" for="login-pwd">Password</label>
@@ -70,8 +64,8 @@ export async function renderSetup(
           </div>
 
           <!-- RESTORE -->
-          <div id="panel-restore" class="setup-panel${startTab==='restore' ? ' active':''}">
-            <p class="screen-subtitle">Restore from a <strong>.ejson</strong> backup file or Google Drive.</p>
+          <div id="panel-restore" class="setup-panel${startTab === 'restore' ? ' active' : ''}">
+            <p class="screen-subtitle">Restore from a <strong>.ejson</strong> backup or Google Drive.</p>
 
             <div class="restore-source-row">
               <button class="restore-source-btn active" id="src-file">💾 Local file</button>
@@ -104,7 +98,7 @@ export async function renderSetup(
           </div>
 
           <!-- NEW VAULT -->
-          <div id="panel-new" class="setup-panel${startTab==='new' ? ' active':''}">
+          <div id="panel-new" class="setup-panel${startTab === 'new' ? ' active' : ''}">
             <p class="screen-subtitle">
               Create a master password to encrypt your journal.
               This cannot be recovered if lost.
@@ -140,7 +134,7 @@ export async function renderSetup(
   await bindRestoreTab(container, wasOAuth);
   bindNewVaultTab(container);
 
-  // Auto-focus
+  // Auto-focus the active panel's first input
   const focusMap: Record<SetupTab, string> = {
     login:   '#login-pwd',
     restore: '#restore-pwd',
@@ -161,14 +155,17 @@ function bindTabSwitcher(container: HTMLElement): void {
       panels.forEach(p => p.classList.remove('active'));
       tab.classList.add('active');
       container.querySelector<HTMLElement>(`#panel-${tab.dataset['tab']}`)?.classList.add('active');
-      // Auto-focus
-      const map: Record<string, string> = { login: '#login-pwd', restore: '#restore-pwd', new: '#pwd1' };
-      container.querySelector<HTMLInputElement>(map[tab.dataset['tab']!] ?? '')?.focus();
+      const focusMap: Record<string, string> = {
+        login:   '#login-pwd',
+        restore: '#restore-pwd',
+        new:     '#pwd1',
+      };
+      container.querySelector<HTMLInputElement>(focusMap[tab.dataset['tab']!] ?? '')?.focus();
     });
   });
 }
 
-// ── Login tab ───────────────────────────────────────────────────────────────
+// ── Unlock tab ───────────────────────────────────────────────────────────────
 
 function bindLoginTab(container: HTMLElement): void {
   const input   = container.querySelector<HTMLInputElement>('#login-pwd')!;
@@ -198,8 +195,11 @@ function bindLoginTab(container: HTMLElement): void {
 
     try {
       const token = await loadVerificationToken();
-      if (!token) { container.querySelector<HTMLButtonElement>('[data-tab="new"]')?.click(); return; }
-
+      if (!token) {
+        // No vault yet — nudge to New Vault tab
+        container.querySelector<HTMLButtonElement>('[data-tab="new"]')?.click();
+        return;
+      }
       const valid = await verifyPassword(token, password);
       if (valid) {
         loginAttempts = 0;
@@ -214,12 +214,15 @@ function bindLoginTab(container: HTMLElement): void {
         } else {
           const left = MAX_ATTEMPTS - loginAttempts;
           errorEl.innerHTML = `<div class="error-msg">Wrong password — ${left} attempt${left !== 1 ? 's' : ''} left.</div>`;
-          btn.disabled = false; btn.textContent = 'Unlock'; input.focus();
+          btn.disabled = false;
+          btn.textContent = 'Unlock';
+          input.focus();
         }
       }
     } catch {
       errorEl.innerHTML = '<div class="error-msg">An error occurred. Try again.</div>';
-      btn.disabled = false; btn.textContent = 'Unlock';
+      btn.disabled = false;
+      btn.textContent = 'Unlock';
     }
   };
 
@@ -236,12 +239,12 @@ async function bindRestoreTab(container: HTMLElement, wasOAuth: boolean): Promis
   const secDrive = container.querySelector<HTMLElement>('#restore-drive-section')!;
 
   srcFile.addEventListener('click', () => {
-    srcFile.classList.add('active'); srcDrive.classList.remove('active');
-    secFile.style.display = ''; secDrive.style.display = 'none';
+    srcFile.classList.add('active');  srcDrive.classList.remove('active');
+    secFile.style.display = '';       secDrive.style.display = 'none';
   });
   srcDrive.addEventListener('click', () => {
     srcDrive.classList.add('active'); srcFile.classList.remove('active');
-    secDrive.style.display = ''; secFile.style.display = 'none';
+    secDrive.style.display = '';      secFile.style.display = 'none';
     renderDriveStatus(container);
   });
 
@@ -259,7 +262,7 @@ async function bindRestoreTab(container: HTMLElement, wasOAuth: boolean): Promis
   const fileClear  = container.querySelector<HTMLButtonElement>('#file-clear')!;
   let chosenFile: File | null = null;
 
-  const setFile  = (f: File) => { chosenFile = f; fileName.textContent = f.name; fileChosen.style.display = ''; dropZone.style.display = 'none'; };
+  const setFile   = (f: File) => { chosenFile = f; fileName.textContent = f.name; fileChosen.style.display = ''; dropZone.style.display = 'none'; };
   const clearFile = ()        => { chosenFile = null; fileInput.value = ''; fileChosen.style.display = 'none'; dropZone.style.display = ''; };
 
   dropZone.addEventListener('click', () => fileInput.click());
@@ -267,9 +270,11 @@ async function bindRestoreTab(container: HTMLElement, wasOAuth: boolean): Promis
   fileClear.addEventListener('click', clearFile);
   dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
   dropZone.addEventListener('dragleave', ()  => dropZone.classList.remove('drag-over'));
-  dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('drag-over'); const f = e.dataTransfer?.files[0]; if (f) setFile(f); });
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault(); dropZone.classList.remove('drag-over');
+    const f = e.dataTransfer?.files[0]; if (f) setFile(f);
+  });
 
-  // Restore button
   const restoreBtn = container.querySelector<HTMLButtonElement>('#restore-btn')!;
   const errorEl    = container.querySelector<HTMLElement>('#restore-error')!;
 
@@ -278,9 +283,9 @@ async function bindRestoreTab(container: HTMLElement, wasOAuth: boolean): Promis
     const pwd     = container.querySelector<HTMLInputElement>('#restore-pwd')!.value;
     const isDrive = srcDrive.classList.contains('active');
 
-    if (!pwd)                        { errorEl.innerHTML = '<div class="error-msg">Enter the vault password.</div>'; return; }
-    if (!isDrive && !chosenFile)     { errorEl.innerHTML = '<div class="error-msg">Select a backup file.</div>'; return; }
-    if (isDrive && !isTokenValid())  { errorEl.innerHTML = '<div class="error-msg">Connect Google Drive first.</div>'; return; }
+    if (!pwd)                       { errorEl.innerHTML = '<div class="error-msg">Enter the vault password.</div>'; return; }
+    if (!isDrive && !chosenFile)    { errorEl.innerHTML = '<div class="error-msg">Select a backup file.</div>'; return; }
+    if (isDrive && !isTokenValid()) { errorEl.innerHTML = '<div class="error-msg">Connect Google Drive first.</div>'; return; }
 
     restoreBtn.disabled  = true;
     restoreBtn.innerHTML = '<span class="spinner"></span> Restoring…';
@@ -298,7 +303,8 @@ async function bindRestoreTab(container: HTMLElement, wasOAuth: boolean): Promis
       navigate('#home');
     } catch (e) {
       errorEl.innerHTML = `<div class="error-msg">${(e as Error).message}</div>`;
-      restoreBtn.disabled = false; restoreBtn.textContent = 'Restore & Unlock';
+      restoreBtn.disabled = false;
+      restoreBtn.textContent = 'Restore & Unlock';
     }
   });
 }
@@ -315,7 +321,8 @@ function bindNewVaultTab(container: HTMLElement): void {
 
   pwd1.addEventListener('input', () => {
     const { score, label, color } = passwordStrength(pwd1.value);
-    bar.style.width = `${score * 25}%`; bar.style.background = color;
+    bar.style.width = `${score * 25}%`;
+    bar.style.background = color;
     barLabel.textContent = pwd1.value.length ? label : '';
   });
 
@@ -325,7 +332,8 @@ function bindNewVaultTab(container: HTMLElement): void {
     if (p1.length < 8) { errorEl.innerHTML = '<div class="error-msg">Password must be at least 8 characters.</div>'; return; }
     if (p1 !== p2)     { errorEl.innerHTML = '<div class="error-msg">Passwords do not match.</div>'; return; }
 
-    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Creating…';
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Creating…';
     try {
       const token = await encrypt(KNOWN_PLAINTEXT, p1);
       await saveVerificationToken(token);
@@ -334,7 +342,8 @@ function bindNewVaultTab(container: HTMLElement): void {
       navigate('#home');
     } catch (e) {
       errorEl.innerHTML = `<div class="error-msg">Failed: ${(e as Error).message}</div>`;
-      btn.disabled = false; btn.textContent = 'Create Vault';
+      btn.disabled = false;
+      btn.textContent = 'Create Vault';
     }
   });
 }
