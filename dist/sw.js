@@ -1,12 +1,5 @@
 // ── Service Worker — Glyph ─────────────────────────────────────────────────────
-//
-// Strategy:
-//   • HTML (navigation requests)  → network-first, fall back to cache
-//   • JS / CSS / other assets     → cache-first, fall back to network
-//
-// Bump CACHE_VERSION on every deploy so stale assets are evicted immediately.
-
-const CACHE_VERSION = 'glyph-v3';
+const CACHE_VERSION = 'glyph-v4';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -15,30 +8,27 @@ const STATIC_ASSETS = [
   '/manifest.webmanifest',
 ];
 
-// Install: pre-cache static assets
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE_VERSION).then(c => c.addAll(STATIC_ASSETS))
   );
-  // Activate immediately, don't wait for old SW clients to close
   self.skipWaiting();
 });
 
-// Activate: delete every cache that isn't the current version
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(
-        keys.filter(k => k !== CACHE_VERSION).map(k => caches.delete(k))
-      )
+      Promise.all(keys.filter(k => k !== CACHE_VERSION).map(k => caches.delete(k)))
     )
   );
-  // Take control of all open tabs immediately
   self.clients.claim();
 });
 
-// Fetch: network-first for HTML, cache-first for everything else
 self.addEventListener('fetch', e => {
+  const url = new URL(e.request.url);
+
+  // Only handle http/https — silently ignore chrome-extension://, data:, blob:, etc.
+  if (!url.protocol.startsWith('http')) return;
   if (e.request.method !== 'GET') return;
 
   const isNavigation =
@@ -46,7 +36,7 @@ self.addEventListener('fetch', e => {
     e.request.headers.get('accept')?.includes('text/html');
 
   if (isNavigation) {
-    // Network-first: always try to get fresh HTML, fall back to cache if offline
+    // Network-first for HTML so every reload gets the latest deploy
     e.respondWith(
       fetch(e.request)
         .then(res => {
@@ -57,14 +47,14 @@ self.addEventListener('fetch', e => {
         .catch(() => caches.match(e.request))
     );
   } else {
-    // Cache-first: serve from cache, update cache in background (stale-while-revalidate)
+    // Cache-first with background revalidation for JS/CSS/assets
     e.respondWith(
       caches.open(CACHE_VERSION).then(async cache => {
         const cached = await cache.match(e.request);
         const networkFetch = fetch(e.request).then(res => {
-          cache.put(e.request, res.clone());
+          if (res.ok) cache.put(e.request, res.clone());
           return res;
-        });
+        }).catch(() => cached);
         return cached ?? networkFetch;
       })
     );
