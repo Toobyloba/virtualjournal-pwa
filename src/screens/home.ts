@@ -1,4 +1,4 @@
-// ── screens/home.ts ───────────────────────────────────────────────────────────────────────
+// ── screens/home.ts ───────────────────────────────────────────────────────────
 
 import { readVault, deleteEntry } from '../storage';
 import { decrypt }                from '../crypto';
@@ -17,13 +17,11 @@ export async function renderHome(container: HTMLElement): Promise<void> {
   }
 }
 
-// ── Mobile layout (unchanged) ────────────────────────────────────────────────────
-
 async function renderMobileHome(container: HTMLElement): Promise<void> {
   container.innerHTML = `
     <div class="screen">
       <div class="topbar">
-        <span class="topbar-title">Journal</span>
+        <span class="topbar-title">Glyph</span>
         <span class="topbar-meta" id="entry-count"></span>
         <button class="icon-btn" id="settings-btn" title="Settings">⚙️</button>
         <button class="icon-btn" id="lock-btn" title="Lock">🔒</button>
@@ -40,13 +38,11 @@ async function renderMobileHome(container: HTMLElement): Promise<void> {
   await loadEntries(container, null);
 }
 
-// ── Desktop two-panel layout ────────────────────────────────────────────────────
-
 async function renderDesktopHome(container: HTMLElement): Promise<void> {
   container.innerHTML = `
     <div id="sidebar">
       <div class="topbar">
-        <span class="topbar-title">Journal</span>
+        <span class="topbar-title">Glyph</span>
         <span class="topbar-meta" id="entry-count"></span>
         <button class="fab icon-btn" id="new-btn" title="New entry">＋</button>
         <button class="icon-btn" id="settings-btn" title="Settings">⚙️</button>
@@ -58,7 +54,7 @@ async function renderDesktopHome(container: HTMLElement): Promise<void> {
     </div>
     <div id="main-panel">
       <div class="welcome-pane">
-        <div class="welcome-icon">📓</div>
+        <div class="welcome-icon">✦</div>
         <div class="welcome-title">Select an entry</div>
         <div class="welcome-desc">Choose an entry from the list, or create a new one.</div>
         <button class="btn btn-primary" id="welcome-new-btn" style="max-width:220px; margin-top:8px">＋ New Entry</button>
@@ -74,8 +70,6 @@ async function renderDesktopHome(container: HTMLElement): Promise<void> {
   await loadEntries(container, null);
 }
 
-// ── Shared entry loading ─────────────────────────────────────────────────────
-
 async function loadEntries(container: HTMLElement, activeId: string | null): Promise<void> {
   const list     = container.querySelector<HTMLElement>('#entry-list')!;
   const countEl  = container.querySelector<HTMLElement>('#entry-count')!;
@@ -90,7 +84,7 @@ async function loadEntries(container: HTMLElement, activeId: string | null): Pro
     if (entries.length === 0) {
       list.innerHTML = `
         <div class="empty-state">
-          <div class="empty-icon">📓</div>
+          <div class="empty-icon">✦</div>
           <div class="empty-title">No entries yet</div>
           <div class="empty-desc">Tap + to write your first entry.</div>
         </div>`;

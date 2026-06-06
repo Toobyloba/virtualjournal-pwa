@@ -8,15 +8,15 @@ import { navigate }              from '../router';
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_SEC  = 30;
 
-let attempts  = 0;
+let attempts   = 0;
 let lockoutEnd = 0;
 
 export async function renderLock(container: HTMLElement): Promise<void> {
   container.innerHTML = `
     <div class="screen">
       <div class="center-screen" style="padding-bottom: calc(32px + env(safe-area-inset-bottom))">
-        <div class="lock-icon">🔒</div>
-        <div class="screen-title">VaultJournal</div>
+        <div class="lock-icon">✦</div>
+        <div class="screen-title">Glyph</div>
         <div class="screen-subtitle">Enter your password to unlock</div>
 
         <div class="form-group">

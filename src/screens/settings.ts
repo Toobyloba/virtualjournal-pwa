@@ -9,7 +9,7 @@ import { getPassword, lock, refreshAutoLockSec }  from '../auth';
 import { navigate }                               from '../router';
 import { showToast }                              from '../utils/dateFormat';
 
-const KNOWN_PLAINTEXT = 'vaultjournal_v1_verification_token';
+const KNOWN_PLAINTEXT = 'glyph_v1_verification_token';
 
 const AUTO_LOCK_OPTIONS = [
   { label: 'Immediately (30s)', value: 30  },
@@ -68,7 +68,7 @@ export async function renderSettings(container: HTMLElement): Promise<void> {
         <div class="settings-section">
           <div class="settings-section-title">About</div>
           <div class="settings-row" style="cursor:default">
-            <span class="settings-row-label">VaultJournal</span>
+            <span class="settings-row-label">Glyph</span>
             <span style="color:var(--text-faint); font-size:13px">v1.0 PWA</span>
           </div>
         </div>
@@ -76,20 +76,18 @@ export async function renderSettings(container: HTMLElement): Promise<void> {
       </div>
     </div>
 
-    <!-- hidden file input for import -->
     <input type="file" id="import-input" accept=".ejson,.json" style="display:none">
   `;
 
   container.querySelector('#back-btn')!.addEventListener('click', () => navigate('#home'));
   renderDriveSection(container);
 
-  // Auto-lock selection
   container.querySelectorAll<HTMLElement>('[data-lock]').forEach(row => {
     row.addEventListener('click', async () => {
       const val = parseInt(row.dataset['lock']!);
       await saveSettings({ autoLockSeconds: val });
       await refreshAutoLockSec();
-      await renderSettings(container); // re-render to update checkmarks
+      await renderSettings(container);
     });
   });
 
@@ -106,8 +104,6 @@ export async function renderSettings(container: HTMLElement): Promise<void> {
   });
 }
 
-// ── Export ────────────────────────────────────────────────────────────────────
-
 async function exportVault(): Promise<void> {
   try {
     const vault = await readVault();
@@ -117,7 +113,7 @@ async function exportVault(): Promise<void> {
     if ('showSaveFilePicker' in window) {
       try {
         const handle = await (window as any).showSaveFilePicker({
-          suggestedName: 'vault.ejson',
+          suggestedName: 'glyph-vault.ejson',
           types: [{ description: 'Encrypted Vault', accept: { 'application/json': ['.ejson', '.json'] } }],
         });
         const writable = await handle.createWritable();
@@ -127,15 +123,13 @@ async function exportVault(): Promise<void> {
         return;
       } catch (err: any) {
         if (err.name === 'AbortError') return;
-        // Fall through to <a> fallback
       }
     }
 
-    // Fallback: <a download>
     const url = URL.createObjectURL(blob);
     const a   = document.createElement('a');
     a.href     = url;
-    a.download = 'vault.ejson';
+    a.download = 'glyph-vault.ejson';
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 5000);
     showToast('Vault exported to Downloads');
@@ -143,8 +137,6 @@ async function exportVault(): Promise<void> {
     showToast(`Export failed: ${(e as Error).message}`);
   }
 }
-
-// ── Import ────────────────────────────────────────────────────────────────────
 
 async function importVault(file: File): Promise<void> {
   try {
@@ -161,8 +153,6 @@ async function importVault(file: File): Promise<void> {
     showToast(`Import failed: ${(e as Error).message}`);
   }
 }
-
-// ── Change Password Modal ─────────────────────────────────────────────────────
 
 function showChangePwdModal(container: HTMLElement): void {
   const overlay = document.createElement('div');
@@ -194,17 +184,16 @@ function showChangePwdModal(container: HTMLElement): void {
   overlay.querySelector('#cp-cancel')!.addEventListener('click', () => overlay.remove());
 
   overlay.querySelector('#cp-submit')!.addEventListener('click', async () => {
-    const currentPwd  = (overlay.querySelector<HTMLInputElement>('#cp-current')!).value;
-    const newPwd      = (overlay.querySelector<HTMLInputElement>('#cp-new')!).value;
-    const confirmPwd  = (overlay.querySelector<HTMLInputElement>('#cp-confirm')!).value;
-    const errEl       = overlay.querySelector<HTMLElement>('#cp-error')!;
-    const submitBtn   = overlay.querySelector<HTMLButtonElement>('#cp-submit')!;
+    const currentPwd = (overlay.querySelector<HTMLInputElement>('#cp-current')!).value;
+    const newPwd     = (overlay.querySelector<HTMLInputElement>('#cp-new')!).value;
+    const confirmPwd = (overlay.querySelector<HTMLInputElement>('#cp-confirm')!).value;
+    const errEl      = overlay.querySelector<HTMLElement>('#cp-error')!;
+    const submitBtn  = overlay.querySelector<HTMLButtonElement>('#cp-submit')!;
 
     errEl.textContent = '';
-    if (newPwd.length < 8)        { errEl.textContent = 'New password must be at least 8 characters.'; return; }
-    if (newPwd !== confirmPwd)    { errEl.textContent = 'Passwords do not match.'; return; }
+    if (newPwd.length < 8)     { errEl.textContent = 'New password must be at least 8 characters.'; return; }
+    if (newPwd !== confirmPwd) { errEl.textContent = 'Passwords do not match.'; return; }
 
-    // Verify current password
     const token = await loadVerificationToken();
     if (!token) { errEl.textContent = 'No verification token found.'; return; }
     const valid = await verifyPassword(token, currentPwd);
@@ -213,7 +202,6 @@ function showChangePwdModal(container: HTMLElement): void {
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<span class="spinner"></span>';
 
-    // Show progress overlay
     const progressOverlay = document.createElement('div');
     progressOverlay.className = 'overlay';
     progressOverlay.innerHTML = `
@@ -227,10 +215,10 @@ function showChangePwdModal(container: HTMLElement): void {
     overlay.remove();
 
     try {
-      const vault    = await readVault();
-      const entries  = vault?.entries ?? [];
-      const progEl   = progressOverlay.querySelector<HTMLElement>('#reenc-progress')!;
-      const updated  = [];
+      const vault   = await readVault();
+      const entries = vault?.entries ?? [];
+      const progEl  = progressOverlay.querySelector<HTMLElement>('#reenc-progress')!;
+      const updated = [];
 
       for (let i = 0; i < entries.length; i++) {
         progEl.textContent = `Entry ${i + 1} of ${entries.length}`;
@@ -260,17 +248,13 @@ function showChangePwdModal(container: HTMLElement): void {
   (overlay.querySelector<HTMLInputElement>('#cp-current')!).focus();
 }
 
-
-// ── Drive Section (injected into renderSettings) ──────────────────────────────
-
 import { isDriveEnabled, isTokenValid, startOAuthFlow,
-         revokeToken, downloadVault, silentRefresh }   from '../drive';
-import { writeVault, readVault, validateVaultFile }    from '../storage';
+         revokeToken, downloadVault }   from '../drive';
 
 export async function renderDriveSection(container: HTMLElement): Promise<void> {
-  const section  = container.querySelector<HTMLElement>('#drive-section')!;
-  const enabled  = await isDriveEnabled();
-  const authed   = isTokenValid();
+  const section = container.querySelector<HTMLElement>('#drive-section')!;
+  const enabled = await isDriveEnabled();
+  const authed  = isTokenValid();
 
   if (!enabled || !authed) {
     section.innerHTML = `
@@ -283,9 +267,7 @@ export async function renderDriveSection(container: HTMLElement): Promise<void> 
         Connect Google Drive
       </button>
     `;
-    section.querySelector('#drive-connect-btn')!.addEventListener('click', () => {
-      startOAuthFlow();
-    });
+    section.querySelector('#drive-connect-btn')!.addEventListener('click', () => startOAuthFlow());
   } else {
     section.innerHTML = `
       <div class="settings-section-title">Google Drive</div>
@@ -304,7 +286,7 @@ export async function renderDriveSection(container: HTMLElement): Promise<void> 
     `;
 
     section.querySelector('#drive-restore-row')!.addEventListener('click', async () => {
-      if (!confirm('Replace the local vault with the copy from Google Drive? The current local vault will be overwritten.')) return;
+      if (!confirm('Replace the local vault with the copy from Google Drive?')) return;
       try {
         const json = await downloadVault();
         const obj  = JSON.parse(json);
@@ -318,7 +300,7 @@ export async function renderDriveSection(container: HTMLElement): Promise<void> 
     });
 
     section.querySelector('#drive-disconnect-row')!.addEventListener('click', async () => {
-      if (!confirm('Disconnect Google Drive? Your local vault is kept. Drive copy is NOT deleted.')) return;
+      if (!confirm('Disconnect Google Drive? Local vault is kept.')) return;
       await revokeToken();
       await renderDriveSection(container);
       showToast('Google Drive disconnected');
