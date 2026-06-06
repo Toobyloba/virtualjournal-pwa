@@ -1,4 +1,4 @@
-// ── main.ts ───────────────────────────────────────────────────────────────────
+// ── main.ts ───────────────────────────────────────────────────────────────────────
 
 import { initRouter, navigate } from './router';
 import { onLock }               from './auth';
@@ -18,15 +18,15 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(console.error);
 }
 
-// On lock: redirect to lock screen
-onLock(() => { navigate('#lock'); });
+// On auto-lock: go back to the unified setup screen, Login tab
+onLock(() => { navigate('#setup'); });
 
 async function render(route: Route, container: HTMLElement): Promise<void> {
   container.innerHTML = '';
 
   switch (route.name) {
-    case 'lock':     await renderLock(container);                       break;
-    case 'setup':         renderSetup(container);                       break;
+    case 'lock':     await renderLock(container);                       break; // shim → setup login tab
+    case 'setup':    await renderSetup(container);                      break;
     case 'home':     await renderHome(container);                       break;
     case 'editor':   await renderEditor(container, route.id);           break;
     case 'entry':    await renderEntryView(container, route.id);        break;
@@ -38,17 +38,16 @@ async function init(): Promise<void> {
   // Handle Google OAuth redirect-back (token in URL hash)
   const wasOAuth = await handleOAuthCallback();
   if (!wasOAuth) {
-    await loadTokenFromIdb();   // restore persisted token if still valid
+    await loadTokenFromIdb();
   }
 
-  const app = document.getElementById('app')!;
+  const app      = document.getElementById('app')!;
   const settings = await loadSettings();
 
-  // Determine initial route
-  if (!settings.hasVault) {
-    location.hash = '#setup';
-  } else if (!location.hash || location.hash === '#' || location.hash === '#home') {
-    location.hash = '#lock';
+  // All auth flows now live in #setup.
+  // Only skip to #setup if no vault; otherwise go to #setup which auto-selects Login tab.
+  if (!location.hash || location.hash === '#' || location.hash === '#lock') {
+    location.hash = settings.hasVault ? '#setup' : '#setup';
   }
 
   initRouter(app, render);
