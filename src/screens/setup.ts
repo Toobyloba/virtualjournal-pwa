@@ -13,7 +13,7 @@ import { navigate }                                     from '../router';
 import { passwordStrength, showToast }                  from '../utils/dateFormat';
 import { isDriveEnabled, isTokenValid, startOAuthFlow,
          handleOAuthCallback, loadTokenFromIdb,
-         downloadVault }                                from '../drive';
+         downloadVault }                                from '../server';
 
 const KNOWN_PLAINTEXT = 'glyph_v1_verification_token';
 const MAX_ATTEMPTS    = 5;
@@ -65,11 +65,11 @@ export async function renderSetup(
 
           <!-- RESTORE -->
           <div id="panel-restore" class="setup-panel${startTab === 'restore' ? ' active' : ''}">
-            <p class="screen-subtitle">Restore from a <strong>.ejson</strong> backup or Google Drive.</p>
+            <p class="screen-subtitle">Restore from a <strong>.ejson</strong> backup or remote server.</p>
 
             <div class="restore-source-row">
               <button class="restore-source-btn active" id="src-file">💾 Local file</button>
-              <button class="restore-source-btn"        id="src-drive">☁️ Google Drive</button>
+              <button class="restore-source-btn"        id="src-drive">☁️ Server</button>
             </div>
 
             <div id="restore-file-section">
@@ -251,7 +251,7 @@ async function bindRestoreTab(container: HTMLElement, wasOAuth: boolean): Promis
   if (wasOAuth) {
     container.querySelector<HTMLButtonElement>('[data-tab="restore"]')?.click();
     srcDrive.click();
-    showToast('✓ Google Drive connected — enter your password to restore');
+    showToast('✓ Server connected — enter your password to restore');
   }
 
   // Drop-zone
@@ -285,7 +285,7 @@ async function bindRestoreTab(container: HTMLElement, wasOAuth: boolean): Promis
 
     if (!pwd)                       { errorEl.innerHTML = '<div class="error-msg">Enter the vault password.</div>'; return; }
     if (!isDrive && !chosenFile)    { errorEl.innerHTML = '<div class="error-msg">Select a backup file.</div>'; return; }
-    if (isDrive && !isTokenValid()) { errorEl.innerHTML = '<div class="error-msg">Connect Google Drive first.</div>'; return; }
+    if (isDrive && !isTokenValid()) { errorEl.innerHTML = '<div class="error-msg">Connect server storage first.</div>'; return; }
 
     restoreBtn.disabled  = true;
     restoreBtn.innerHTML = '<span class="spinner"></span> Restoring…';
@@ -358,15 +358,15 @@ async function renderDriveStatus(container: HTMLElement): Promise<void> {
   if (enabled && authed) {
     area.innerHTML = `
       <div class="drive-status-connected">
-        <span style="color:var(--success)">● Connected to Google Drive</span>
-        <span style="color:var(--text-muted);font-size:13px">Encrypted vault will be downloaded from Drive.</span>
+        <span style="color:var(--success)">● Connected to server storage</span>
+        <span style="color:var(--text-muted);font-size:13px">Encrypted vault will be downloaded from server.</span>
       </div>`;
   } else {
     area.innerHTML = `
       <p style="color:var(--text-muted);font-size:13px;line-height:1.6;margin-bottom:8px">
-        Connect Google Drive to download your encrypted backup.
+        Connect to your server to download your encrypted backup.
       </p>
-      <button class="btn btn-secondary" id="setup-drive-connect">Connect Google Drive</button>`;
+      <button class="btn btn-secondary" id="setup-drive-connect">Connect Server</button>`;
     area.querySelector('#setup-drive-connect')!.addEventListener('click', () => startOAuthFlow());
   }
 }

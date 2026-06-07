@@ -4,7 +4,7 @@ import { readVault, addEntry, updateEntry } from '../storage';
 import { encrypt, decrypt }                 from '../crypto';
 import { getPassword, resetAutoLockTimer }  from '../auth';
 import { navigate }                         from '../router';
-import { uploadAfterSave }                  from '../drive';
+import { uploadAfterSave }                  from '../server';
 
 export async function renderEditor(container: HTMLElement, entryId?: string): Promise<void> {
   container.innerHTML = `

@@ -249,7 +249,7 @@ function showChangePwdModal(container: HTMLElement): void {
 }
 
 import { isDriveEnabled, isTokenValid, startOAuthFlow,
-         revokeToken, downloadVault }   from '../drive';
+         revokeToken, downloadVault }   from '../server';
 
 export async function renderDriveSection(container: HTMLElement): Promise<void> {
   const section = container.querySelector<HTMLElement>('#drive-section')!;
@@ -258,41 +258,41 @@ export async function renderDriveSection(container: HTMLElement): Promise<void> 
 
   if (!enabled || !authed) {
     section.innerHTML = `
-      <div class="settings-section-title">Google Drive</div>
+      <div class="settings-section-title">Server Storage</div>
       <div style="color:var(--text-muted); font-size:14px; margin-bottom:12px; line-height:1.6">
-        Automatically back up your encrypted vault to Google Drive after every save.
-        Google only sees ciphertext — your password never leaves this device.
+        Automatically back up your encrypted vault to your server after every save.
+        The server only sees ciphertext — your password never leaves this device.
       </div>
       <button class="btn btn-secondary" id="drive-connect-btn" style="margin-bottom:4px">
-        Connect Google Drive
+        Connect Server
       </button>
     `;
     section.querySelector('#drive-connect-btn')!.addEventListener('click', () => startOAuthFlow());
   } else {
     section.innerHTML = `
-      <div class="settings-section-title">Google Drive</div>
+      <div class="settings-section-title">Server Storage</div>
       <div class="settings-row" style="cursor:default; margin-bottom:2px">
         <span class="settings-row-label">Status</span>
         <span style="color:var(--success); font-size:13px">● Connected</span>
       </div>
       <div class="settings-row" id="drive-restore-row">
-        <span class="settings-row-label">Restore from Drive</span>
+        <span class="settings-row-label">Restore from Server</span>
         <span style="color:var(--text-faint)">↓</span>
       </div>
       <div class="settings-row" id="drive-disconnect-row" style="margin-top:2px">
-        <span class="settings-row-label" style="color:var(--danger)">Disconnect Drive</span>
+        <span class="settings-row-label" style="color:var(--danger)">Disconnect Server</span>
         <span style="color:var(--text-faint)">→</span>
       </div>
     `;
 
     section.querySelector('#drive-restore-row')!.addEventListener('click', async () => {
-      if (!confirm('Replace the local vault with the copy from Google Drive?')) return;
+      if (!confirm('Replace the local vault with the copy from the server?')) return;
       try {
         const json = await downloadVault();
         const obj  = JSON.parse(json);
-        if (!validateVaultFile(obj)) { showToast('Invalid vault in Drive'); return; }
+        if (!validateVaultFile(obj)) { showToast('Invalid vault on server'); return; }
         await writeVault(obj);
-        showToast('Vault restored from Drive. Please unlock again.');
+        showToast('Vault restored from server. Please unlock again.');
         lock();
       } catch (e) {
         showToast(`Restore failed: ${(e as Error).message}`);
@@ -300,10 +300,10 @@ export async function renderDriveSection(container: HTMLElement): Promise<void> 
     });
 
     section.querySelector('#drive-disconnect-row')!.addEventListener('click', async () => {
-      if (!confirm('Disconnect Google Drive? Local vault is kept.')) return;
+      if (!confirm('Disconnect server storage? Local vault is kept.')) return;
       await revokeToken();
       await renderDriveSection(container);
-      showToast('Google Drive disconnected');
+      showToast('Server storage disconnected');
     });
   }
 }

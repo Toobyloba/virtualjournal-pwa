@@ -2,7 +2,7 @@
 // Vault OPFS file + IndexedDB settings/verification via idb-keyval.
 
 import { get, set } from 'idb-keyval';
-import { isDriveEnabled, uploadVault, isTokenValid } from './drive';
+import { isDriveEnabled, uploadVault, isTokenValid } from './server';
 import type { EncryptedPayload } from './crypto';
 
 export interface JournalEntry {
@@ -57,7 +57,7 @@ export async function writeVault(vault: VaultFile): Promise<void> {
   isDriveEnabled().then(enabled => {
     if (enabled && isTokenValid()) {
       uploadVault(json).catch(err => {
-        console.warn('Drive sync failed:', err.message);
+        console.warn('Server sync failed:', err.message);
       });
     }
   });

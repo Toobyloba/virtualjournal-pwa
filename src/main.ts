@@ -3,7 +3,7 @@
 import { initRouter, navigate } from './router';
 import { onLock }               from './auth';
 import { loadSettings }         from './storage';
-import { handleOAuthCallback, loadTokenFromIdb } from './drive';
+import { handleOAuthCallback, loadTokenFromIdb } from './server';
 import type { Route }           from './router';
 
 import { renderLock }      from './screens/lock';
