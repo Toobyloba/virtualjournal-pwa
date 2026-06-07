@@ -17,9 +17,9 @@ const VAULT_KEY = 'glyph-vault.ejson';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function cors(origin: string | undefined, env: Env): Headers {
+function cors(request: Request, env: Env): Headers {
   const headers = new Headers();
-  const allowed = env.CORS_ORIGIN || origin || '*';
+  const allowed = env.CORS_ORIGIN || request.headers.get('Origin') || '*';
   headers.set('Access-Control-Allow-Origin', allowed);
   headers.set('Access-Control-Allow-Methods', 'GET, PUT, OPTIONS');
   headers.set('Access-Control-Allow-Headers', 'Authorization, Content-Type');
@@ -95,12 +95,12 @@ export default {
 
     // CORS preflight
     if (request.method === 'OPTIONS') {
-      return new Response(null, { status: 204, headers: cors(url.origin, env) });
+      return new Response(null, { status: 204, headers: cors(request, env) });
     }
 
     // Public health check
     if (path === '/api/health') {
-      const headers = cors(url.origin, env);
+      const headers = cors(request, env);
       return json({ status: 'ok' }, 200, headers);
     }
 
@@ -108,7 +108,7 @@ export default {
     const authError = requireAuth(request, env);
     if (authError) return authError;
 
-    const corsHeaders = cors(url.origin, env);
+    const corsHeaders = cors(request, env);
 
     // GET /api/vault — download
     if (path === '/api/vault' && request.method === 'GET') {
