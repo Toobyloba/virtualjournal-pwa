@@ -15,7 +15,7 @@ npm install
 ## Step 2 — Create a KV namespace
 
 ```bash
-npx wrangler kv:namespace create VAULT_STORE
+npx wrangler kv namespace create VAULT_STORE
 ```
 
 Copy the `id` from the output and paste it into `wrangler.toml`:
@@ -38,7 +38,7 @@ node -e "console.log(require('crypto').randomBytes(16).toString('hex'))"
 Then set it as a secret on the worker:
 
 ```bash
-npx wrangler secret put API_KEY
+echo "your-generated-key" | npx wrangler secret put API_KEY
 # Paste the key when prompted
 ```
 

@@ -2,14 +2,9 @@ name = "glyph-server"
 main = "src/index.ts"
 compatibility_date = "2025-06-07"
 
-# KV namespace for storing the encrypted vault.
-# After creating the namespace, uncomment and fill in the id:
-# [[kv_namespaces]]
-# binding = "VAULT_STORE"
-# id = ""
-
-# Generate an API key and set it as a secret:
-#   npx wrangler secret put API_KEY
+[[kv_namespaces]]
+binding = "VAULT_STORE"
+id = "4249da843d634f3fb70246c944e49c12"
 
 [vars]
 # Optional: configure CORS origin (defaults to allowing all origins).
