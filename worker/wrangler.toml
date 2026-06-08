@@ -7,7 +7,7 @@ binding = "VAULT_STORE"
 id = "4249da843d634f3fb70246c944e49c12"
 
 [vars]
-CORS_ORIGIN = "https://glyph.pages.dev"
+CORS_ORIGIN = "https://glyph-app.pages.dev"
 
 [observability]
 enabled = true
