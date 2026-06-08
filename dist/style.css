@@ -754,7 +754,14 @@ body::before {
   }
 
   #sidebar .topbar { background: transparent; padding-top: 20px; }
-  #sidebar .scroll-area { padding-bottom: 16px; }
+  #sidebar .scroll-area {
+    padding-bottom: 16px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  #sidebar .scroll-area::-webkit-scrollbar { display: none; }
+  .entry-body::-webkit-scrollbar            { display: none; }
+  .setup-screen-scroll::-webkit-scrollbar   { display: none; }
 
   #main-panel {
     flex: 1;
@@ -807,6 +814,8 @@ body::before {
   .entry-body {
     padding: 36px 48px;
     font-size: 18px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
     line-height: 32px;
     max-width: 720px;
     margin: 0 auto;
