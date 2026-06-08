@@ -9,7 +9,8 @@ export interface EncryptedPayload {
   version:    number;   // schema version, currently 1
 }
 
-const ITERATIONS = 200_000;
+const ITERATIONS  = 210_000;   // OWASP 2023 minimum for PBKDF2-SHA256
+const MIN_VERSION = 1;         // reject payloads below this version
 const ENC = new TextEncoder();
 const DEC = new TextDecoder();
 
@@ -56,6 +57,9 @@ export async function encrypt(plaintext: string, password: string): Promise<Encr
 }
 
 export async function decrypt(payload: EncryptedPayload, password: string): Promise<string> {
+  if (payload.version < MIN_VERSION) {
+    throw new Error(`Unsupported payload version ${payload.version} (min ${MIN_VERSION})`);
+  }
   const salt = new Uint8Array(base64ToBuf(payload.salt));
   const iv   = new Uint8Array(base64ToBuf(payload.iv));
   const key  = await deriveKey(password, salt);

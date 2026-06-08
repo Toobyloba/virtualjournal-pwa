@@ -140,5 +140,15 @@ export async function loadVerificationToken(): Promise<EncryptedPayload | null> 
 export function validateVaultFile(obj: unknown): obj is VaultFile {
   if (typeof obj !== 'object' || obj === null) return false;
   const v = obj as Record<string, unknown>;
-  return typeof v['version'] === 'number' && Array.isArray(v['entries']);
+  if (typeof v['version'] !== 'number' || !Array.isArray(v['entries'])) return false;
+  // Validate each entry has the minimum required fields
+  return (v['entries'] as unknown[]).every(e => {
+    if (typeof e !== 'object' || e === null) return false;
+    const entry = e as Record<string, unknown>;
+    return typeof entry['id'] === 'string'
+      && typeof entry['createdAt'] === 'string'
+      && typeof entry['updatedAt'] === 'string'
+      && typeof entry['payload'] === 'object' && entry['payload'] !== null
+      && typeof entry['previewPayload'] === 'object' && entry['previewPayload'] !== null;
+  });
 }

@@ -1,7 +1,8 @@
 // ── auth.ts ───────────────────────────────────────────────────────────────────
 // In-memory session state. Never persisted.
 
-import { loadSettings } from './storage';
+import { loadSettings }                      from './storage';
+import { decryptServerKey, lockServerKey } from './server';
 
 interface AuthState {
   password:   string | null;
@@ -35,12 +36,15 @@ export async function unlock(password: string): Promise<void> {
   state.password    = password;
   state.autoLockSec = settings.autoLockSeconds;
   resetAutoLockTimer();
+  // Decrypt server API key if one is configured
+  decryptServerKey(password).catch(() => {});
 }
 
 export function lock(): void {
   state.password = null;
   if (state.lockTimer) clearTimeout(state.lockTimer);
   state.lockTimer = null;
+  lockServerKey();
   if (onLockCb) onLockCb();
 }
 

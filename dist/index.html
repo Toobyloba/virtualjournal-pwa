@@ -8,17 +8,14 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Glyph">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; script-src 'self'; connect-src 'self' https:; img-src 'self' data:; manifest-src 'self';">
+  <meta name="referrer" content="no-referrer">
   <title>Glyph</title>
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/style.css">
-  <!-- ▼ Replace with your OAuth Client ID from Google Cloud Console -->
-  <!-- See GOOGLE_DRIVE_SETUP.md for a 5-minute setup guide          -->
-  <script>
-    window.__GOOGLE_CLIENT_ID__ = '706894381491-kdmbgt0c7j34vsqqdikea5d509n6k8pe.apps.googleusercontent.com';
-  </script>
 </head>
 <body>
   <div id="app"></div>

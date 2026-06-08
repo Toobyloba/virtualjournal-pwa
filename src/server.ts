@@ -7,26 +7,58 @@
 
 import { get, set, del } from 'idb-keyval';
 import { showToast }      from './utils/dateFormat';
+import { encrypt, decrypt } from './crypto';
+import type { EncryptedPayload } from './crypto';
 
-const IDB_SERVER_URL = 'srv_url';
-const IDB_API_KEY    = 'srv_api_key';
-const IDB_ENABLED    = 'srv_enabled';
+const IDB_SERVER_URL     = 'srv_url';
+const IDB_ENCRYPTED_KEY  = 'srv_encrypted_key';
+const IDB_ENABLED        = 'srv_enabled';
 
 interface ServerConfig {
   url: string;
-  apiKey: string;
+  apiKey: string;              // decrypted in-memory only
+  encryptedKey: EncryptedPayload | null; // stored in IDB
 }
 
-const config: ServerConfig = { url: '', apiKey: '' };
+const config: ServerConfig = { url: '', apiKey: '', encryptedKey: null };
 
 // ── Public API (mirrors drive.ts surface) ─────────────────────────────────────
 
 export async function loadTokenFromIdb(): Promise<void> {
-  const url    = await get<string>(IDB_SERVER_URL);
-  const apiKey = await get<string>(IDB_API_KEY);
-  if (url && apiKey) {
-    config.url    = url;
-    config.apiKey = apiKey;
+  const url          = await get<string>(IDB_SERVER_URL);
+  const encryptedKey = await get<EncryptedPayload>(IDB_ENCRYPTED_KEY);
+  if (url) {
+    config.url          = url;
+    config.encryptedKey = encryptedKey ?? null;
+  }
+}
+
+export async function decryptServerKey(password: string): Promise<void> {
+  if (!config.encryptedKey) return;
+  try {
+    config.apiKey = await decrypt(config.encryptedKey, password);
+  } catch {
+    // wrong password or corrupted data — key stays empty
+    config.apiKey = '';
+  }
+}
+
+export function lockServerKey(): void {
+  config.apiKey = '';
+}
+
+export async function reEncryptServerKey(oldPwd: string, newPwd: string): Promise<void> {
+  if (!config.encryptedKey) return;
+  try {
+    const plainKey = await decrypt(config.encryptedKey, oldPwd);
+    config.encryptedKey = await encrypt(plainKey, newPwd);
+    await set(IDB_ENCRYPTED_KEY, config.encryptedKey);
+    config.apiKey = plainKey;
+  } catch {
+    // If decryption fails, clear the stored key
+    config.encryptedKey = null;
+    config.apiKey = '';
+    await del(IDB_ENCRYPTED_KEY);
   }
 }
 
@@ -98,6 +130,12 @@ export function startOAuthFlow(): void {
 
     const cleanUrl = rawUrl.replace(/\/+$/, '');
 
+    // Enforce HTTPS
+    if (!cleanUrl.startsWith('https://')) {
+      errEl.textContent = 'Server URL must use HTTPS.';
+      return;
+    }
+
     connectBtn.disabled = true;
     connectBtn.innerHTML = '<span class="spinner"></span> Testing…';
 
@@ -127,10 +165,11 @@ export function startOAuthFlow(): void {
 // ── Disconnect ────────────────────────────────────────────────────────────────
 
 export async function revokeToken(): Promise<void> {
-  config.url    = '';
-  config.apiKey = '';
+  config.url          = '';
+  config.apiKey       = '';
+  config.encryptedKey = null;
   await del(IDB_SERVER_URL);
-  await del(IDB_API_KEY);
+  await del(IDB_ENCRYPTED_KEY);
   await set(IDB_ENABLED, false);
 }
 
@@ -186,7 +225,16 @@ export async function uploadAfterSave(vaultJson: string): Promise<void> {
 async function persistConfig(url: string, apiKey: string): Promise<void> {
   config.url    = url;
   config.apiKey = apiKey;
+
+  // Encrypt API key with the master password before persisting
+  const { getPassword } = await import('./auth');
+  const pwd = getPassword();
+  if (pwd) {
+    const encryptedKey = await encrypt(apiKey, pwd);
+    config.encryptedKey = encryptedKey;
+    await set(IDB_ENCRYPTED_KEY, encryptedKey);
+  }
+
   await set(IDB_SERVER_URL, url);
-  await set(IDB_API_KEY,    apiKey);
-  await set(IDB_ENABLED,    true);
+  await set(IDB_ENABLED, true);
 }

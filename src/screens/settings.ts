@@ -233,6 +233,7 @@ function showChangePwdModal(container: HTMLElement): void {
       await replaceAllEntries(updated);
       const newToken = await encrypt(KNOWN_PLAINTEXT, newPwd);
       await saveVerificationToken(newToken);
+      await reEncryptServerKey(currentPwd, newPwd);
 
       progressOverlay.remove();
       showToast('Password changed. Please log in again.');
@@ -249,7 +250,8 @@ function showChangePwdModal(container: HTMLElement): void {
 }
 
 import { isDriveEnabled, isTokenValid, startOAuthFlow,
-         revokeToken, downloadVault }   from '../server';
+         revokeToken, downloadVault,
+         reEncryptServerKey }            from '../server';
 
 export async function renderDriveSection(container: HTMLElement): Promise<void> {
   const section = container.querySelector<HTMLElement>('#drive-section')!;
