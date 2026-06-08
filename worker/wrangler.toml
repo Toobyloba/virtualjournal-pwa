@@ -7,8 +7,7 @@ binding = "VAULT_STORE"
 id = "4249da843d634f3fb70246c944e49c12"
 
 [vars]
-# Optional: configure CORS origin (defaults to allowing all origins).
-# CORS_ORIGIN = "https://your-pages-site.pages.dev"
+CORS_ORIGIN = "https://glyph.pages.dev"
 
 [observability]
 enabled = true
