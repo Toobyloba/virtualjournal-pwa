@@ -824,7 +824,7 @@ body::before {
   }
 
     #main-panel .scroll-area {
-    max-width: 680px;
+    max-width: 600px;
     margin: 0 auto;
     width: 100%;
     padding: 20px 24px 40px;
