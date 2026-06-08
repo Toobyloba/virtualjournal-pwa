@@ -830,7 +830,7 @@ body::before {
     padding-bottom: 40px;
   }
   .screen > .scroll-area {
-    max-width: 640px;
+    max-width: 25%;
     margin: 0 auto;
     width: 100%;
   }
