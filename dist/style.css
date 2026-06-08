@@ -753,7 +753,7 @@ body::before {
     flex-shrink: 0;
   }
 
-  #sidebar .topbar { background: transparent; padding-top: 32px; }
+  #sidebar .topbar { background: transparent; padding-top: 40px; }
   #sidebar .scroll-area {
     padding-bottom: 16px;
     scrollbar-width: none;
