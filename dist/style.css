@@ -829,10 +829,10 @@ body::before {
     width: 100%;
     padding-bottom: 40px;
   }
-  .screen > .scroll-area {
-    max-width: 25%;
-    margin: 0 auto;
-    width: 100%;
+  .screen .scroll-area {
+    max-width: 480px;
+    margin-left: auto;
+    margin-right: auto;
   }
 }
 
