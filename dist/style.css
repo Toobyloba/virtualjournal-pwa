@@ -823,11 +823,11 @@ body::before {
     width: 100%;
   }
 
-  #main-panel .scroll-area {
-    max-width: 640px;
+    #main-panel .scroll-area {
+    max-width: 720px;
     margin: 0 auto;
     width: 100%;
-    padding-bottom: 40px;
+    padding: 20px 24px 40px;
   }
 }
 

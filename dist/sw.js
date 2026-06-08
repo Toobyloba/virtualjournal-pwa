@@ -1,5 +1,5 @@
 // ── Service Worker — Glyph ─────────────────────────────────────────────────────
-const CACHE_VERSION = 'glyph-v6';
+const CACHE_VERSION = 'glyph-v7';
 
 // Assets served network-first (always get latest on reload)
 const NETWORK_FIRST = ['/', '/index.html', '/app.js'];
